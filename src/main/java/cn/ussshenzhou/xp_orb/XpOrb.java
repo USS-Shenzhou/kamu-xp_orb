@@ -4,6 +4,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.damagesource.DamageType;
+import net.minecraft.world.scores.Objective;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 
@@ -21,5 +22,9 @@ public class XpOrb {
 
     public static class DamageSource {
         public static final ResourceKey<DamageType> SHOT = ResourceKey.create(Registries.DAMAGE_TYPE, new ResourceLocation(MOD_ID, "orb"));
+    }
+
+    public static class ScoreBoard {
+        public static final String ORB_AMOUNT = "orbs";
     }
 }

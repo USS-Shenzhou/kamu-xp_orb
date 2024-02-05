@@ -1,8 +1,10 @@
 package cn.ussshenzhou.xp_orb.mixin;
 
+import cn.ussshenzhou.t88.task.TaskHelper;
 import cn.ussshenzhou.xp_orb.XpOrb;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.FluidTags;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ExperienceOrb;
@@ -18,9 +20,11 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.injection.Inject;
 
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
+import java.util.Set;
 
 /**
  * @author USS_Shenzhou
@@ -43,6 +47,15 @@ public abstract class ExperienceOrbMixin extends Entity {
         super(pEntityType, pLevel);
     }
 
+    @Unique
+    private double friction = 0.988;
+
+    @Unique
+    private boolean fireImmune = false;
+
+    @Unique
+    private boolean followPlayer = true;
+
     /**
      * @author
      * @reason
@@ -54,6 +67,7 @@ public abstract class ExperienceOrbMixin extends Entity {
         this.xo = this.getX();
         this.yo = this.getY();
         this.zo = this.getZ();
+
         if (this.isEyeInFluid(FluidTags.WATER)) {
             this.setUnderwaterMovement();
         }
@@ -74,26 +88,68 @@ public abstract class ExperienceOrbMixin extends Entity {
             this.scanForEntities();
         }
 
-        if (this.followingPlayer != null && (this.followingPlayer.isSpectator() || this.followingPlayer.isDeadOrDying())) {
-            this.followingPlayer = null;
+        if (this.followingPlayer != null) {
+            if (this.followingPlayer.isSpectator()) {
+                updateAmount(-1);
+                this.followingPlayer = null;
+            } else if (this.followingPlayer.isDeadOrDying()) {
+                if (random.nextFloat() < 0.1f) {
+                    fireImmune = true;
+                } else {
+                    Vec3 vec3 = new Vec3(
+                            this.followingPlayer.getX() - this.getX(),
+                            this.followingPlayer.getY() + (double) this.followingPlayer.getEyeHeight() / 2.0 - this.getY() + 2,
+                            this.followingPlayer.getZ() - this.getZ()
+                    );
+                    updateAmount(-1);
+                    this.followingPlayer = null;
+                    var d = vec3.length();
+                    this.setDeltaMovement(vec3.scale(d / 10));
+                    TaskHelper.addServerTask(() -> {
+                        float theta = random.nextBoolean() ? -1 : 1 * random.nextFloat() * (float) Math.PI;
+                        float phi = random.nextBoolean() ? -1 : 1 * random.nextFloat() * (float) Math.PI;
+                        this.setDeltaMovement(0.1 * Mth.sin(theta) * Mth.cos(phi),
+                                0.1 * Mth.sin(theta) * Mth.sin(phi),
+                                0.1 * Mth.cos(theta)
+                        );
+                    }, 10);
+                }
+            }
+            if (fireImmune && !this.followingPlayer.isDeadOrDying()) {
+                fireImmune = false;
+                this.setDeltaMovement(0, 0, 0);
+                this.moveTo(followingPlayer.getEyePosition());
+            }
         }
 
-        if (this.followingPlayer != null) {
+        if (this.followingPlayer != null && followPlayer) {
             Vec3 vec3 = new Vec3(
                     this.followingPlayer.getX() - this.getX(),
                     this.followingPlayer.getY() + (double) this.followingPlayer.getEyeHeight() / 2.0 - this.getY(),
                     this.followingPlayer.getZ() - this.getZ()
             );
-            double d1 = 0.05 + random.nextFloat() * 0.02;
+            double d1 = 0.06;
             this.setDeltaMovement(this.getDeltaMovement().add(vec3.normalize().scale(d1)));
         }
         //----
         checkHit();
         //----
         this.move(MoverType.SELF, this.getDeltaMovement());
-        this.setDeltaMovement(this.getDeltaMovement().scale(0.988));
+        this.setDeltaMovement(this.getDeltaMovement().scale(friction));
 
         ++this.age;
+    }
+
+    @Unique
+    private void updateAmount(int getOrLost) {
+        if (followingPlayer == null || this.level().isClientSide) {
+            return;
+        }
+        var score = this.level().getScoreboard();
+        var obj = score.getObjective(XpOrb.ScoreBoard.ORB_AMOUNT);
+        if (obj != null) {
+            score.getOrCreatePlayerScore(this.followingPlayer, obj).add(getOrLost);
+        }
     }
 
     @Unique
@@ -136,6 +192,7 @@ public abstract class ExperienceOrbMixin extends Entity {
     private void scanForEntities() {
         if (this.followingPlayer == null) {
             this.followingPlayer = this.level().getNearestPlayer(this, 16);
+            updateAmount(1);
         }
     }
 
@@ -149,4 +206,33 @@ public abstract class ExperienceOrbMixin extends Entity {
 
     }
 
+    @Override
+    public boolean fireImmune() {
+        return fireImmune;
+    }
+
+    @Override
+    public void remove(RemovalReason pReason) {
+        updateAmount(-1);
+        super.remove(pReason);
+    }
+
+    @Override
+    public void restoreFrom(Entity pEntity) {
+        super.restoreFrom(pEntity);
+        if (!level().isClientSide) {
+            if (pEntity instanceof ExperienceOrb orb) {
+                if (orb.followingPlayer != null) {
+                    var player = level().getServer().getPlayerList().getPlayer(orb.followingPlayer.getUUID());
+                    this.followingPlayer = player;
+                }
+            }
+        }
+    }
+
+
+    @Override
+    public boolean isOnPortalCooldown() {
+        return true;
+    }
 }
