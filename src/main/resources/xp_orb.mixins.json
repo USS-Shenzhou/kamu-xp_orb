@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "cn.ussshenzhou.xp_orb.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "refmap": "xp_orb.refmap.json",
+  "mixins": [
+    "ExperienceOrbMixin"
+  ],
+  "client": [
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
