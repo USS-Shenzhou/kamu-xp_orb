@@ -89,18 +89,37 @@ public class ForgeListener {
                 .literal("recal")
                 .executes(context -> {
                     var s = context.getSource().getServer();
-                    s.getPlayerList().getPlayers().forEach(player->{
+                    s.getPlayerList().getPlayers().forEach(player -> {
                         var o = player.getScoreboard().getObjective(XpOrb.ScoreBoard.ORB_AMOUNT);
-                        if (o!=null){
-                            player.getScoreboard().getOrCreatePlayerScore(player,o).set(
-                                    (int) StreamSupport.stream(s.getAllLevels().spliterator(),true)
-                                            .flatMap(level->StreamSupport.stream(level.getAllEntities().spliterator(),true))
-                                            .filter(entity -> entity instanceof ExperienceOrb orb && orb.followingPlayer==player)
+                        if (o != null) {
+                            player.getScoreboard().getOrCreatePlayerScore(player, o).set(
+                                    (int) StreamSupport.stream(s.getAllLevels().spliterator(), true)
+                                            .flatMap(level -> StreamSupport.stream(level.getAllEntities().spliterator(), true))
+                                            .filter(entity -> entity instanceof ExperienceOrb orb && orb.followingPlayer == player)
                                             .count()
                             );
                         }
                     });
                     return 1;
                 }));
+    }
+
+    @SubscribeEvent
+    public static void playerLogOut(PlayerEvent.PlayerLoggedOutEvent event) {
+        if (event.getEntity().level().isClientSide) {
+            return;
+        }
+        var level = (ServerLevel) event.getEntity().level();
+        level.getServer().getAllLevels().forEach(l -> {
+            StreamSupport.stream(l.getAllEntities().spliterator(), true)
+                    .filter(e -> e instanceof ExperienceOrb orb && orb.followingPlayer == event.getEntity())
+                    .sequential()
+                    .forEach(entity -> {
+                        XpOrb.updateAmount(entity, -1);
+                        entity.setDeltaMovement(0, 0, 0);
+                        //noinspection DataFlowIssue
+                        ((ExperienceOrb) entity).followingPlayer = null;
+                    });
+        });
     }
 }
