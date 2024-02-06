@@ -93,7 +93,7 @@ dependencies {
         exclude group: "net.minecraftforge", module: "neoforge"
     }
     jarJar(group: 'cn.ussshenzhou', name: 't88', version: '[0.8,0.9)') {
-        jarJar.pin(it, '0.8.0-pre.0')
+        jarJar.pin(it, '0.8.0')
         exclude group: "net.neoforged", module: "neoforge"
     }
     // Example mod dependency using a mod jar from ./libs with a flat dir repository

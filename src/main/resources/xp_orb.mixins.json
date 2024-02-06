@@ -5,9 +5,11 @@
   "compatibilityLevel": "JAVA_8",
   "refmap": "xp_orb.refmap.json",
   "mixins": [
+    "EntityTypeMixin",
     "ExperienceOrbMixin"
   ],
   "client": [
+    "ExperienceOrbRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1

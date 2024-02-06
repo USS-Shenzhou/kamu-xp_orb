@@ -122,4 +122,14 @@ public class ForgeListener {
                     });
         });
     }
+
+    @SubscribeEvent
+    public static void playerRespawn(PlayerEvent.Clone event) {
+        if (event.isWasDeath()) {
+            if (!event.getEntity().level().isClientSide) {
+                var s = event.getEntity().level().getServer();
+                s.getCommands().performPrefixedCommand(s.createCommandSourceStack(), "/recal");
+            }
+        }
+    }
 }
