@@ -207,7 +207,7 @@ public abstract class ExperienceOrbMixin extends Entity implements IShootOrb {
                 .forEach(e -> e.hurt(this.damageSources().source(XpOrb.DamageSource.SHOT, followingPlayer), 1));*/
         //noinspection DataFlowIssue
         StreamSupport.stream(((ServerLevel) level()).getAllEntities().spliterator(), true)
-                .filter(e -> (!(e instanceof ExperienceOrb)) && (!(e instanceof ItemEntity)) && !e.getUUID().equals(followingPlayer.getUUID()))
+                .filter(e -> e != null && (!(e instanceof ExperienceOrb)) && (!(e instanceof ItemEntity)) && !e.getUUID().equals(followingPlayer.getUUID()))
                 .filter(e -> this.getBoundingBox().intersects(e.getBoundingBox()))
                 .sequential()
                 .forEach(e -> {
@@ -273,7 +273,6 @@ public abstract class ExperienceOrbMixin extends Entity implements IShootOrb {
             }
         }
     }
-
 
     @Override
     public boolean isOnPortalCooldown() {
