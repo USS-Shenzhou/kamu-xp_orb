@@ -92,8 +92,9 @@ public class ShootOrbPacket {
     public void line(Player player, List<Entity> list) {
         var pos = player.getEyePosition().toVector3f();
         var looking = player.getLookAngle().toVector3f().normalize();
-        float step = 96f / list.size();
-        for (int i = 0, listSize = list.size(); i < listSize; i++) {
+        var size = list.size();
+        float step = size > 320 ? 96f / size : 0.3f;
+        for (int i = 0; i < size; i++) {
             Entity entity = list.get(i);
             entity.setPos(pos.x + looking.x * step * i,
                     pos.y + looking.y * step * i,

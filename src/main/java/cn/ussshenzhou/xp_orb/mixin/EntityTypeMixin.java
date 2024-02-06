@@ -13,7 +13,7 @@ public class EntityTypeMixin {
 
     @ModifyConstant(method = "<clinit>",constant = @Constant(intValue = 20,ordinal = 1))
     private static int alwaysTrackXpOrb(int constant){
-        return 5;
+        return 1;
     }
 
 }

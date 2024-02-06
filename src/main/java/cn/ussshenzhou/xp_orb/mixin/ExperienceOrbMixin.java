@@ -4,6 +4,7 @@ import cn.ussshenzhou.t88.task.TaskHelper;
 import cn.ussshenzhou.xp_orb.IShootOrb;
 import cn.ussshenzhou.xp_orb.XpOrb;
 import cn.ussshenzhou.xp_orb.network.ShootOrbPacket;
+import cn.ussshenzhou.xp_orb.network.SwitchHurtPlayerPacket;
 import cn.ussshenzhou.xp_orb.util.MovementHelper;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.FluidTags;
@@ -209,7 +210,12 @@ public abstract class ExperienceOrbMixin extends Entity implements IShootOrb {
                 .filter(e -> (!(e instanceof ExperienceOrb)) && (!(e instanceof ItemEntity)) && !e.getUUID().equals(followingPlayer.getUUID()))
                 .filter(e -> this.getBoundingBox().intersects(e.getBoundingBox()))
                 .sequential()
-                .forEach(e -> e.hurt(this.damageSources().source(XpOrb.DamageSource.SHOT, followingPlayer), 1));
+                .forEach(e -> {
+                    if (this.followingPlayer.getTags().contains(SwitchHurtPlayerPacket.HURT) && e instanceof Player) {
+                        return;
+                    }
+                    e.hurt(this.damageSources().source(XpOrb.DamageSource.SHOT, followingPlayer), 1);
+                });
     }
 
     /**
