@@ -62,7 +62,7 @@ public class RecommendOrbCheckPacket {
             var e = level.getEntity(id);
             if (e instanceof Orb orb) {
                 if ((!follow.equals(orb.followingPlayer == null ? new UUID(0, 0) : orb.followingPlayer.getUUID()))
-                        || pos.distanceToSqr(orb.position()) > 4 * 4
+                        || pos.distanceToSqr(orb.position()) > 3 * 3
                 ) {
                     orb.tickCount = tickCount;
                     orb.moveTo(pos);

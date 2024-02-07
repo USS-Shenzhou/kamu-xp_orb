@@ -249,11 +249,6 @@ public class Orb extends Entity {
         }
     }
 
-    private static boolean tryMergeToExisting(ServerLevel pLevel, Vec3 pPos, int pAmount) {
-        return false;
-
-    }
-
     @Override
     public boolean fireImmune() {
         return fireImmune;
