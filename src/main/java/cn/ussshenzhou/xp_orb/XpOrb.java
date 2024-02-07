@@ -1,14 +1,13 @@
 package cn.ussshenzhou.xp_orb;
 
+import cn.ussshenzhou.xp_orb.entity.ModEntityTypes;
+import cn.ussshenzhou.xp_orb.entity.Orb;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.damagesource.DamageType;
-import net.minecraft.world.entity.ExperienceOrb;
-import net.minecraft.world.scores.Objective;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
-import org.spongepowered.asm.mixin.Unique;
 
 /**
  * @author USS_Shenzhou
@@ -19,11 +18,10 @@ public class XpOrb {
     public static final String MOD_ID = "xp_orb";
 
     public XpOrb(IEventBus modEventBus) {
-
+        ModEntityTypes.ENTITY_TYPE.register(modEventBus);
     }
 
-    public static void updateAmount(ExperienceOrb orb, int getOrLost) {
-        //noinspection ConstantValue
+    public static void updateAmount(Orb orb, int getOrLost) {
         if (orb.followingPlayer == null || orb.level().isClientSide) {
             return;
         }
@@ -35,11 +33,11 @@ public class XpOrb {
     }
 
     public static void updateAmount(Object orb, int getOrLost) {
-        updateAmount((ExperienceOrb) orb, getOrLost);
+        updateAmount((Orb) orb, getOrLost);
     }
 
     public static class DamageSource {
-        public static final ResourceKey<DamageType> SHOT = ResourceKey.create(Registries.DAMAGE_TYPE, new ResourceLocation(MOD_ID, "orb"));
+        public static final ResourceKey<DamageType> ORB = ResourceKey.create(Registries.DAMAGE_TYPE, new ResourceLocation(MOD_ID, "orb"));
     }
 
     public static class ScoreBoard {

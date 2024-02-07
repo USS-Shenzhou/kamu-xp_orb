@@ -6,11 +6,6 @@ import cn.ussshenzhou.xp_orb.network.SwitchHurtPlayerPacket;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.minecraft.core.BlockPos;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.HitResult;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod;
@@ -38,7 +33,7 @@ public class KeyInputListener {
         Minecraft minecraft = Minecraft.getInstance();
         if (SHOOT.consumeClick()) {
             NetworkHelper.sendToServer(new ShootOrbPacket());
-        }else if (SHOOT.consumeClick()){
+        }else if (HURT.consumeClick()){
             NetworkHelper.sendToServer(new SwitchHurtPlayerPacket());
         }
     }

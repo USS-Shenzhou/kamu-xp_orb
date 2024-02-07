@@ -6,6 +6,7 @@ import cn.ussshenzhou.t88.network.annotation.*;
 import cn.ussshenzhou.t88.task.Task;
 import cn.ussshenzhou.t88.task.TaskHelper;
 import cn.ussshenzhou.xp_orb.IShootOrb;
+import cn.ussshenzhou.xp_orb.entity.Orb;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -71,14 +72,14 @@ public class ShootOrbPacket {
                 player.addTag(SHOOTING);
                 if (player.level().isClientSide) {
                     var list = StreamSupport.stream(((ClientLevel) player.level()).entitiesForRendering().spliterator(), true)
-                            .filter(entity -> entity instanceof ExperienceOrb orb && orb.followingPlayer == player)
+                            .filter(entity -> entity instanceof Orb orb && orb.followingPlayer == player)
                             .toList();
                     TASK_CACHE_CLIENT.put(player, TaskHelper.addClientRepeatTask(() -> {
                         line(player, list);
                     }, 0, 0));
                 } else {
                     var list = StreamSupport.stream(((ServerLevel) player.level()).getAllEntities().spliterator(), true)
-                            .filter(entity -> entity instanceof ExperienceOrb orb && orb.followingPlayer == player)
+                            .filter(entity -> entity instanceof Orb orb && orb.followingPlayer == player)
                             .toList();
                     TASK_CACHE_SERVER.put(player, TaskHelper.addServerRepeatTask(() -> {
                         line(player, list);

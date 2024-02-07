@@ -1,7 +1,9 @@
 package cn.ussshenzhou.xp_orb;
 
 import cn.ussshenzhou.t88.task.TaskHelper;
+import cn.ussshenzhou.xp_orb.entity.Orb;
 import net.minecraft.commands.Commands;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.ExperienceOrb;
@@ -9,18 +11,16 @@ import net.minecraft.world.entity.player.Player;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.EntityTeleportEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
-import net.neoforged.neoforge.event.entity.living.LivingKnockBackEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerXpEvent;
 
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /**
@@ -32,7 +32,7 @@ public class ForgeListener {
     @SubscribeEvent
     public static void cancelDamage(LivingDamageEvent event) {
         var source = event.getSource();
-        if (source.is(XpOrb.DamageSource.SHOT)) {
+        if (source.is(XpOrb.DamageSource.ORB)) {
             return;
         }
         if (source.getDirectEntity() instanceof Player || source.getEntity() instanceof Player) {
@@ -59,12 +59,13 @@ public class ForgeListener {
         LinkedList<List<Entity>> cache = new LinkedList<>();
         level.getServer().getAllLevels().forEach(l -> {
             cache.add(StreamSupport.stream(l.getAllEntities().spliterator(), true)
-                    .filter(e -> e instanceof ExperienceOrb orb && orb.followingPlayer == player)
+                    .filter(e -> e instanceof Orb orb && orb.followingPlayer == player)
                     .collect(Collectors.toList()));
         });
         TaskHelper.addServerTask(() -> {
             cache.forEach(list -> list.forEach(orb -> orb.teleportTo((ServerLevel) player.level(), player.getX(), player.getY(), player.getZ(), Set.of(), 0, 0)));
         }, 20 * 10);
+        TaskHelper.addServerTask(() -> reCal(level.getServer()), 20 * 11);
     }
 
     @SubscribeEvent
@@ -95,7 +96,7 @@ public class ForgeListener {
                             player.getScoreboard().getOrCreatePlayerScore(player, o).set(
                                     (int) StreamSupport.stream(s.getAllLevels().spliterator(), true)
                                             .flatMap(level -> StreamSupport.stream(level.getAllEntities().spliterator(), true))
-                                            .filter(entity -> entity instanceof ExperienceOrb orb && orb.followingPlayer == player)
+                                            .filter(entity -> entity instanceof Orb orb && orb.followingPlayer == player)
                                             .count()
                             );
                         }
@@ -112,24 +113,45 @@ public class ForgeListener {
         var level = (ServerLevel) event.getEntity().level();
         level.getServer().getAllLevels().forEach(l -> {
             StreamSupport.stream(l.getAllEntities().spliterator(), true)
-                    .filter(e -> e instanceof ExperienceOrb orb && orb.followingPlayer == event.getEntity())
+                    .filter(e -> e instanceof Orb orb && orb.followingPlayer == event.getEntity())
                     .sequential()
                     .forEach(entity -> {
                         XpOrb.updateAmount(entity, -1);
                         entity.setDeltaMovement(0, 0, 0);
-                        //noinspection DataFlowIssue
-                        ((ExperienceOrb) entity).followingPlayer = null;
+                        ((Orb) entity).followingPlayer = null;
                     });
         });
+    }
+
+    @SubscribeEvent
+    public static void playerLogIn(PlayerEvent.PlayerLoggedInEvent event){
+        if (event.getEntity().level().isClientSide) {
+            return;
+        }
+        TaskHelper.addServerTask(() -> reCal(event.getEntity().getServer()), 40);
     }
 
     @SubscribeEvent
     public static void playerRespawn(PlayerEvent.Clone event) {
         if (event.isWasDeath()) {
             if (!event.getEntity().level().isClientSide) {
-                var s = event.getEntity().level().getServer();
-                s.getCommands().performPrefixedCommand(s.createCommandSourceStack(), "/recal");
+                reCal(event.getEntity().level().getServer());
             }
+        }
+    }
+
+    private static void reCal(MinecraftServer s) {
+        if (s == null) {
+            return;
+        }
+        s.getCommands().performPrefixedCommand(s.createCommandSourceStack(), "/recal");
+    }
+
+    @SubscribeEvent
+    public static void replaceOrb(EntityJoinLevelEvent event) {
+        if (event.getEntity() instanceof ExperienceOrb xpOrb) {
+            event.setCanceled(true);
+            event.getLevel().addFreshEntity(Orb.convert(xpOrb));
         }
     }
 }
