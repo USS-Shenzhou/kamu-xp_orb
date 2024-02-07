@@ -32,7 +32,7 @@ public class KeyInputListener {
     public static void onKeyInput(InputEvent.Key event) {
         Minecraft minecraft = Minecraft.getInstance();
         if (SHOOT.consumeClick()) {
-            NetworkHelper.sendToServer(new ShootOrbPacket());
+            NetworkHelper.sendToServer(new ShootOrbPacket(minecraft.player.getUUID()));
         }else if (HURT.consumeClick()){
             NetworkHelper.sendToServer(new SwitchHurtPlayerPacket());
         }

@@ -1,5 +1,6 @@
 package cn.ussshenzhou.xp_orb;
 
+import cn.ussshenzhou.t88.gui.HudManager;
 import cn.ussshenzhou.t88.task.TaskHelper;
 import cn.ussshenzhou.xp_orb.entity.ModEntityTypes;
 import cn.ussshenzhou.xp_orb.entity.Orb;
@@ -11,6 +12,7 @@ import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.EntityTeleportEvent;
@@ -172,5 +174,10 @@ public class ForgeListener {
                 player.level().addFreshEntity(o);
             }
         }
+    }
+
+    @SubscribeEvent
+    public static void logInClient(ClientPlayerNetworkEvent.LoggingIn event) {
+        HudManager.add(new HurtStatusHud());
     }
 }

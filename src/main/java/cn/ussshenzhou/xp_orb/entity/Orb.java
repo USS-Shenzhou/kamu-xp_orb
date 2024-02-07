@@ -18,6 +18,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.MoverType;
+import net.minecraft.world.entity.ai.targeting.TargetingConditions;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.vehicle.Boat;
@@ -129,6 +130,11 @@ public class Orb extends Entity {
             return;
         }
 
+
+        if (followingPlayer != null) {
+            tryShare();
+        }
+
         if (followingPlayer == null && findPlayerCd <= 0) {
             this.setDeltaMovement(this.getDeltaMovement().add(0, -0.02, 0));
         }
@@ -222,6 +228,23 @@ public class Orb extends Entity {
         findPlayerCd--;
     }
 
+    private void tryShare() {
+        var score = this.level().getScoreboard();
+        var obj = score.getObjective(XpOrb.ScoreBoard.ORB_AMOUNT);
+        if (obj != null) {
+            level().players().stream()
+                    .filter(p -> p.distanceToSqr(this) < 2 * 2 && p != followingPlayer)
+                    .min((p1, p2) -> (int) (p1.distanceToSqr(this) - p2.distanceToSqr(this)))
+                    .ifPresent(p -> {
+                        if (score.getOrCreatePlayerScore(followingPlayer, obj).get() > score.getOrCreatePlayerScore(p, obj).get()) {
+                            XpOrb.updateAmount(this, -1);
+                            this.followingPlayer = p;
+                            XpOrb.updateAmount(this, 1);
+                        }
+                    });
+        }
+    }
+
     private void setUnderwaterMovement() {
         Vec3 vec3 = this.getDeltaMovement();
         this.setDeltaMovement(vec3.x * 0.99F, Math.min(vec3.y + 5.0E-4F, 0.06F), vec3.z * 0.99F);
@@ -231,21 +254,27 @@ public class Orb extends Entity {
         if (followingPlayer == null || level().isClientSide) {
             return;
         }
-        StreamSupport.stream(((ServerLevel) level()).getAllEntities().spliterator(), true)
-                .filter(e -> e != null
-                        && (!(e instanceof Orb))
-                        && (!(e instanceof ItemEntity))
-                        && (!(e instanceof Boat))
-                        && !e.getUUID().equals(followingPlayer.getUUID())
-                )
-                .filter(e -> this.getBoundingBox().intersects(e.getBoundingBox()))
-                .sequential()
-                .forEach(e -> {
-                    if ((!this.followingPlayer.getTags().contains(SwitchHurtPlayerPacket.HURT)) && e instanceof Player) {
-                        return;
-                    }
-                    e.hurt(this.damageSources().source(XpOrb.DamageSource.ORB, followingPlayer), 1);
-                });
+        try {
+            StreamSupport.stream(((ServerLevel) level()).getAllEntities().spliterator(), true)
+                    .filter(e -> e != null
+                            && (!(e instanceof Orb))
+                            && (!(e instanceof ItemEntity))
+                            && (!(e instanceof Boat))
+                            && !e.getUUID().equals(followingPlayer.getUUID())
+                    )
+                    .filter(e -> this.getBoundingBox().intersects(e.getBoundingBox()))
+                    .sequential()
+                    .forEach(e -> {
+                        if (
+                                (!this.followingPlayer.getTags().contains(SwitchHurtPlayerPacket.HURT))
+                                        && e instanceof Player
+                        ) {
+                            return;
+                        }
+                        e.hurt(this.damageSources().source(XpOrb.DamageSource.ORB, followingPlayer), 1);
+                    });
+        } catch (Exception ignored) {
+        }
     }
 
     private void scanForEntities() {

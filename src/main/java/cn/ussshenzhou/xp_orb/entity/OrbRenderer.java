@@ -45,13 +45,13 @@ public class OrbRenderer extends EntityRenderer<Orb> {
         float f8 = ((float) pEntity.tickCount + pEntity.getId() + pPartialTicks) / 2.0F;
         int r;
         int g;
-        if (pEntity.followingPlayer != null && pEntity.followingPlayer.getTags().contains(SwitchHurtPlayerPacket.HURT)) {
-            g = (int) ((Mth.sin(f8 + 0.0F) + 1.0F) * 0.5F * 255.0F);
-            r = 255;
-        } else {
+        //if (pEntity.followingPlayer != null && pEntity.followingPlayer.getTags().contains(SwitchHurtPlayerPacket.HURT)) {
+        //    g = (int) ((Mth.sin(f8 + 0.0F) + 1.0F) * 0.5F * 255.0F);
+        //    r = 255;
+        //} else {
             r = (int) ((Mth.sin(f8 + 0.0F) + 1.0F) * 0.5F * 255.0F);
             g = 255;
-        }
+        //}
         int b = (int) ((Mth.sin(f8 + (float) (Math.PI * 4.0 / 3.0)) + 1.0F) * 0.1F * 255.0F);
         pPoseStack.translate(0.0F, 0.1F, 0.0F);
         pPoseStack.mulPose(this.entityRenderDispatcher.cameraOrientation());

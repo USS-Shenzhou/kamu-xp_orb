@@ -16,10 +16,12 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.player.Player;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.handling.PlayPayloadContext;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -28,17 +30,20 @@ import java.util.stream.StreamSupport;
  */
 @NetPacket
 public class ShootOrbPacket {
+    UUID follow;
 
-    public ShootOrbPacket() {
+    public ShootOrbPacket(UUID uuid) {
+        follow = uuid;
     }
 
     @Decoder
     public ShootOrbPacket(FriendlyByteBuf buf) {
+        follow = buf.readUUID();
     }
 
     @Encoder
     public void write(FriendlyByteBuf buf) {
-
+        buf.writeUUID(follow);
     }
 
     @ClientHandler
@@ -48,7 +53,7 @@ public class ShootOrbPacket {
 
     @ServerHandler
     public void serverHandler(PlayPayloadContext context) {
-        context.player().ifPresent(player -> NetworkHelper.sendToPlayer((ServerPlayer) player, this));
+        context.player().ifPresent(player -> NetworkHelper.sendTo(PacketDistributor.ALL.noArg(), this));
         process(context);
     }
 
@@ -57,37 +62,43 @@ public class ShootOrbPacket {
     public static final HashMap<Player, Task> TASK_CACHE_SERVER = new HashMap<>();
 
     public void process(PlayPayloadContext context) {
-        context.player().ifPresent(player -> {
-            var tags = player.getTags();
-            if (tags.contains(SHOOTING)) {
-                tags.remove(SHOOTING);
-                if (player.level().isClientSide) {
-                    TASK_CACHE_CLIENT.get(player).cancel();
-                    TASK_CACHE_CLIENT.remove(player);
-                } else {
-                    TASK_CACHE_SERVER.get(player).cancel();
-                    TASK_CACHE_SERVER.remove(player);
-                }
+        if (context.level().isEmpty()) {
+            return;
+        }
+        var player = context.level().get().getPlayerByUUID(follow);
+        if (player == null) {
+            return;
+        }
+        var tags = player.getTags();
+        if (tags.contains(SHOOTING)) {
+            tags.remove(SHOOTING);
+            if (player.level().isClientSide) {
+                TASK_CACHE_CLIENT.get(player).cancel();
+                TASK_CACHE_CLIENT.remove(player);
             } else {
-                player.addTag(SHOOTING);
-                if (player.level().isClientSide) {
-                    var list = StreamSupport.stream(((ClientLevel) player.level()).entitiesForRendering().spliterator(), true)
-                            .filter(entity -> entity instanceof Orb orb && orb.followingPlayer == player)
-                            .toList();
-                    TASK_CACHE_CLIENT.put(player, TaskHelper.addClientRepeatTask(() -> {
-                        line(player, list);
-                    }, 0, 0));
-                } else {
-                    var list = StreamSupport.stream(((ServerLevel) player.level()).getAllEntities().spliterator(), true)
-                            .filter(entity -> entity instanceof Orb orb && orb.followingPlayer == player)
-                            .toList();
-                    TASK_CACHE_SERVER.put(player, TaskHelper.addServerRepeatTask(() -> {
-                        line(player, list);
-                    }, 0, 0));
-                }
-
+                TASK_CACHE_SERVER.get(player).cancel();
+                TASK_CACHE_SERVER.remove(player);
             }
-        });
+        } else {
+            player.addTag(SHOOTING);
+            if (player.level().isClientSide) {
+                var list = StreamSupport.stream(((ClientLevel) player.level()).entitiesForRendering().spliterator(), true)
+                        .filter(entity -> entity instanceof Orb orb && orb.followingPlayer == player)
+                        .toList();
+                TASK_CACHE_CLIENT.put(player, TaskHelper.addClientRepeatTask(() -> {
+                    line(player, list);
+                }, 0, 0));
+            } else {
+                var list = StreamSupport.stream(((ServerLevel) player.level()).getAllEntities().spliterator(), true)
+                        .filter(entity -> entity instanceof Orb orb && orb.followingPlayer == player)
+                        .toList();
+                TASK_CACHE_SERVER.put(player, TaskHelper.addServerRepeatTask(() -> {
+                    line(player, list);
+                }, 0, 0));
+            }
+
+        }
+
     }
 
     public void line(Player player, List<Entity> list) {
