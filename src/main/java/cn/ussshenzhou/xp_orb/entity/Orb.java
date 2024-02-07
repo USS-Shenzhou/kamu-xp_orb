@@ -20,7 +20,9 @@ import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.vehicle.Boat;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.PacketDistributor;
 
@@ -230,7 +232,12 @@ public class Orb extends Entity {
             return;
         }
         StreamSupport.stream(((ServerLevel) level()).getAllEntities().spliterator(), true)
-                .filter(e -> e != null && (!(e instanceof Orb)) && (!(e instanceof ItemEntity)) && !e.getUUID().equals(followingPlayer.getUUID()))
+                .filter(e -> e != null
+                        && (!(e instanceof Orb))
+                        && (!(e instanceof ItemEntity))
+                        && (!(e instanceof Boat))
+                        && !e.getUUID().equals(followingPlayer.getUUID())
+                )
                 .filter(e -> this.getBoundingBox().intersects(e.getBoundingBox()))
                 .sequential()
                 .forEach(e -> {
@@ -296,5 +303,37 @@ public class Orb extends Entity {
     @Override
     protected BlockPos getBlockPosBelowThatAffectsMyMovement() {
         return this.getOnPos(0.999999F);
+    }
+
+    @Override
+    protected void playCombinationStepSounds(BlockState p_277472_, BlockState p_277630_, BlockPos primaryPos, BlockPos secondaryPos) {
+        if (random.nextFloat() < 0.7f) {
+            return;
+        }
+        super.playCombinationStepSounds(p_277472_, p_277630_, primaryPos, secondaryPos);
+    }
+
+    @Override
+    protected void playMuffledStepSound(BlockState p_283110_, BlockPos pos) {
+        if (random.nextFloat() < 0.7f) {
+            return;
+        }
+        super.playMuffledStepSound(p_283110_, pos);
+    }
+
+    @Override
+    protected void playStepSound(BlockPos pPos, BlockState pState) {
+        if (random.nextFloat() < 0.7f) {
+            return;
+        }
+        super.playStepSound(pPos, pState);
+    }
+
+    @Override
+    protected void playSwimSound(float pVolume) {
+        if (random.nextFloat() < 0.7f) {
+            return;
+        }
+        super.playSwimSound(pVolume);
     }
 }

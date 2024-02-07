@@ -1,6 +1,7 @@
 package cn.ussshenzhou.xp_orb;
 
 import cn.ussshenzhou.t88.task.TaskHelper;
+import cn.ussshenzhou.xp_orb.entity.ModEntityTypes;
 import cn.ussshenzhou.xp_orb.entity.Orb;
 import net.minecraft.commands.Commands;
 import net.minecraft.server.MinecraftServer;
@@ -124,7 +125,7 @@ public class ForgeListener {
     }
 
     @SubscribeEvent
-    public static void playerLogIn(PlayerEvent.PlayerLoggedInEvent event){
+    public static void playerLogIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity().level().isClientSide) {
             return;
         }
@@ -152,6 +153,24 @@ public class ForgeListener {
         if (event.getEntity() instanceof ExperienceOrb xpOrb) {
             event.setCanceled(true);
             event.getLevel().addFreshEntity(Orb.convert(xpOrb));
+        }
+    }
+
+    @SubscribeEvent
+    public static void advancementXp(PlayerXpEvent.XpChange event) {
+        if (event.getAmount() > 0) {
+            event.setCanceled(true);
+            var player = event.getEntity();
+            if (player.level().isClientSide) {
+                return;
+            }
+            for (int i = 0; i < (event.getAmount() + 5) / 5; i++) {
+                var o = new Orb(ModEntityTypes.ORB.get(), player.level());
+                o.setPos(player.getRandomX(1), player.getRandomY(), player.getRandomZ(1));
+                o.followingPlayer = player;
+                XpOrb.updateAmount(o, 1);
+                player.level().addFreshEntity(o);
+            }
         }
     }
 }
