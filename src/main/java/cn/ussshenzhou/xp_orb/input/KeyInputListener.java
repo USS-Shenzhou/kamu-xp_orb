@@ -32,9 +32,9 @@ public class KeyInputListener {
     public static void onKeyInput(InputEvent.Key event) {
         Minecraft minecraft = Minecraft.getInstance();
         if (SHOOT.consumeClick()) {
-            NetworkHelper.sendToServer(new ShootOrbPacket(minecraft.player.getUUID()));
-        }else if (HURT.consumeClick()){
-            NetworkHelper.sendToServer(new SwitchHurtPlayerPacket());
+            NetworkHelper.sendToServer(new ShootOrbPacket(minecraft.player.getUUID(), !minecraft.player.getTags().contains(ShootOrbPacket.SHOOTING)));
+        } else if (HURT.consumeClick()) {
+            NetworkHelper.sendToServer(new SwitchHurtPlayerPacket(!minecraft.player.getTags().contains(SwitchHurtPlayerPacket.HURT)));
         }
     }
 }

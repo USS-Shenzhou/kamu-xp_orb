@@ -11,26 +11,30 @@ import net.neoforged.neoforge.network.handling.PlayPayloadContext;
  */
 @NetPacket
 public class SwitchHurtPlayerPacket {
+    boolean hurt;
 
-    public SwitchHurtPlayerPacket() {
+
+    public SwitchHurtPlayerPacket(boolean hurt) {
+        this.hurt = hurt;
     }
 
     @Decoder
     public SwitchHurtPlayerPacket(FriendlyByteBuf buf) {
+        this.hurt = buf.readBoolean();
     }
 
     @Encoder
     public void write(FriendlyByteBuf buf) {
-
+        buf.writeBoolean(hurt);
     }
 
     @ClientHandler
     public void clientHandler(PlayPayloadContext context) {
         context.player().ifPresent(player -> {
-            if (player.getTags().contains(HURT)) {
-                player.removeTag(HURT);
-            } else {
+            if (hurt) {
                 player.addTag(HURT);
+            } else {
+                player.removeTag(HURT);
             }
         });
     }
@@ -41,10 +45,10 @@ public class SwitchHurtPlayerPacket {
     public void serverHandler(PlayPayloadContext context) {
         NetworkHelper.sendTo(PacketDistributor.ALL.noArg(), this);
         context.player().ifPresent(player -> {
-            if (player.getTags().contains(HURT)) {
-                player.removeTag(HURT);
-            } else {
+            if (hurt) {
                 player.addTag(HURT);
+            } else {
+                player.removeTag(HURT);
             }
         });
     }

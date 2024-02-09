@@ -5,16 +5,11 @@ import cn.ussshenzhou.t88.network.NetworkHelper;
 import cn.ussshenzhou.t88.network.annotation.*;
 import cn.ussshenzhou.t88.task.Task;
 import cn.ussshenzhou.t88.task.TaskHelper;
-import cn.ussshenzhou.xp_orb.IShootOrb;
 import cn.ussshenzhou.xp_orb.entity.Orb;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.handling.PlayPayloadContext;
@@ -22,7 +17,6 @@ import net.neoforged.neoforge.network.handling.PlayPayloadContext;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /**
@@ -31,19 +25,23 @@ import java.util.stream.StreamSupport;
 @NetPacket
 public class ShootOrbPacket {
     UUID follow;
+    boolean shoot;
 
-    public ShootOrbPacket(UUID uuid) {
+    public ShootOrbPacket(UUID uuid, boolean shoot) {
         follow = uuid;
+        this.shoot = shoot;
     }
 
     @Decoder
     public ShootOrbPacket(FriendlyByteBuf buf) {
         follow = buf.readUUID();
+        shoot = buf.readBoolean();
     }
 
     @Encoder
     public void write(FriendlyByteBuf buf) {
         buf.writeUUID(follow);
+        buf.writeBoolean(shoot);
     }
 
     @ClientHandler
@@ -70,16 +68,21 @@ public class ShootOrbPacket {
             return;
         }
         var tags = player.getTags();
-        if (tags.contains(SHOOTING)) {
-            tags.remove(SHOOTING);
-            if (player.level().isClientSide) {
-                TASK_CACHE_CLIENT.get(player).cancel();
+        tags.remove(SHOOTING);
+        if (player.level().isClientSide) {
+            var t = TASK_CACHE_CLIENT.get(player);
+            if (t != null) {
+                t.cancel();
                 TASK_CACHE_CLIENT.remove(player);
-            } else {
-                TASK_CACHE_SERVER.get(player).cancel();
-                TASK_CACHE_SERVER.remove(player);
             }
         } else {
+            var t = TASK_CACHE_SERVER.get(player);
+            if (t != null) {
+                t.cancel();
+                TASK_CACHE_SERVER.remove(player);
+            }
+        }
+        if (shoot) {
             player.addTag(SHOOTING);
             if (player.level().isClientSide) {
                 var list = StreamSupport.stream(((ClientLevel) player.level()).entitiesForRendering().spliterator(), true)
@@ -98,7 +101,6 @@ public class ShootOrbPacket {
             }
 
         }
-
     }
 
     public void line(Player player, List<Entity> list) {
